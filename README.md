@@ -1,2 +1,10 @@
-# Shopnosis
-## (Aquib,Vamsi,Sudha,Kousik,Venkat,Prakash,Varun)
+### Shopnosis
+
+## TEAM MEMBERS - 
+# Varun
+# Aquib
+# Kousik
+# Venkat
+# Sudha
+# Prakash
+# Vamsi
