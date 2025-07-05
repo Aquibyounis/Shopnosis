@@ -1,4 +1,4 @@
-### Shopnosis
+# Shopnosis
 
 ## TEAM MEMBERS - 
 Varun
