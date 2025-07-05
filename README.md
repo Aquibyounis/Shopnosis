@@ -2,9 +2,9 @@
 
 ## TEAM MEMBERS - 
 Varun
-Aquib
-Kousik
-Venkat
 Sudha
-Prakash
+Venkat
 Vamsi
+Prakash
+Kousik
+Aquib
