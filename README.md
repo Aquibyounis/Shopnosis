@@ -1,2 +1,2 @@
 # Shopnosis
-=> (Aquib,Vamsi,Sudha,Kousik,Venkat,Prakash,Varun)
+## (Aquib,Vamsi,Sudha,Kousik,Venkat,Prakash,Varun)
