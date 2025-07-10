@@ -86,19 +86,27 @@ const Index = () => {
           </div>
         </div>
 
+        // ...existing code...
         {/* Floating Cards */}
-        <div className="absolute top-1/4 left-10 hidden lg:block">
-          <Card className="w-48 shadow-xl border-0 bg-white/80 backdrop-blur-sm animate-float">
+        <div className="absolute top-1/3 left-10 hidden lg:block">
+          <Card className="w-56 shadow-xl border-0 bg-white/80 backdrop-blur-sm animate-float">
             <CardContent className="p-4">
               <div className="flex items-center space-x-2 mb-2">
-                <TrendingUp className="w-5 h-5 text-green-500" />
-                <span className="font-semibold text-sm">Conversion Rate</span>
+                <BarChart3 className="w-5 h-5 text-blue-600" />
+                <span className="font-semibold text-sm">Sales Data Insights</span>
               </div>
-              <div className="text-2xl font-bold text-green-600">+24.5%</div>
-              <div className="text-xs text-gray-500">vs last month</div>
+              <div className="text-lg font-bold text-gray-900 mb-1">Instant Analysis</div>
+              <div className="text-sm text-gray-700 mb-2">
+                Instantly analyzes your Sales and Trends.
+              </div>
+              <div className="flex items-center space-x-2 mt-2">
+                <span className="text-xs text-blue-600 font-semibold">.csv</span>
+                <span className="text-xs text-gray-500">Easy upload &amp; instant results</span>
+              </div>
             </CardContent>
           </Card>
         </div>
+// ...existing code...
 
         <div className="absolute top-1/3 right-10 hidden lg:block">
           <Card className="w-52 shadow-xl border-0 bg-white/80 backdrop-blur-sm animate-float" style={{animationDelay: '1s'}}>
