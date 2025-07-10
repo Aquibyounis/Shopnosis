@@ -20,7 +20,7 @@ const Index = () => {
               <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
                 <BarChart3 className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-gray-900">ShopperMind</span>
+              <span className="text-xl font-bold text-gray-900">ShopnosisIQ</span>
             </div>
             <div className="flex items-center space-x-4">
               <Link to="/login">
@@ -53,7 +53,7 @@ const Index = () => {
               Like Never Before
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
-              ShopperMind uses advanced AI to analyze buyer behavior, predict trends, and provide actionable insights that drive conversions and boost revenue.
+              ShopnosisIQ uses advanced AI to analyze buyer behavior, predict trends, and provide actionable insights that drive conversions and boost revenue.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
@@ -65,7 +65,7 @@ const Index = () => {
                 ))}
               </div>
               <div className="text-sm text-gray-600">
-                <span className="font-semibold text-gray-900">2,500+ businesses</span> trust ShopperMind
+                <span className="font-semibold text-gray-900">2,500+ businesses</span> trust ShopnosisIQ
               </div>
             </div>
 
@@ -203,7 +203,7 @@ const Index = () => {
             Ready to Transform Your Business?
           </h2>
           <p className="text-xl text-gray-600 mb-8">
-            Join thousands of companies already using ShopperMind to drive growth.
+            Join thousands of companies already using ShopnosisIQ to drive growth.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
@@ -244,7 +244,7 @@ const Index = () => {
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
                   <BarChart3 className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-xl font-bold">ShopperMind</span>
+                <span className="text-xl font-bold">ShopnosisIQ</span>
               </div>
               <p className="text-gray-400">
                 AI-powered buyer behavior analytics for modern businesses.
@@ -280,7 +280,7 @@ const Index = () => {
           </div>
           
           <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 ShopperMind. All rights reserved.</p>
+            <p>&copy; 2025 ShopnosisIQ. All rights reserved.</p>
           </div>
         </div>
       </footer>
