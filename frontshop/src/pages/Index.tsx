@@ -86,7 +86,7 @@ const Index = () => {
           </div>
         </div>
 
-        // ...existing code...
+
         {/* Floating Cards */}
         <div className="absolute top-1/3 left-10 hidden lg:block">
           <Card className="w-56 shadow-xl border-0 bg-white/80 backdrop-blur-sm animate-float">
@@ -106,7 +106,7 @@ const Index = () => {
             </CardContent>
           </Card>
         </div>
-// ...existing code...
+
 
         <div className="absolute top-1/3 right-10 hidden lg:block">
           <Card className="w-52 shadow-xl border-0 bg-white/80 backdrop-blur-sm animate-float" style={{animationDelay: '1s'}}>
