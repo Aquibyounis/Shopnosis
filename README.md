@@ -87,4 +87,4 @@ Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-trick
 ### Step 4 - Add venv to Jupyter kernel 
     python -m ipykernel install --user --name=mlmodel-venv --display-name "ML Model (venv)"
 ### Step 4 - Select kernel as ML (VENV) in kernel
-    jupyter server => VENV
+    jupyter server => ML Model (venv)
