@@ -71,3 +71,20 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+
+
+
+
+
+# ML MODEL installation process
+
+### Step 1 - Install venv using command 
+    python -m venv venv
+### Step 2 - Activate venv and install packages 
+    venv\Scripts\activate
+### Step 3 - Install requirements packages (❌ Never install without activating "venv")
+    pip install -r requirements.txt
+### Step 4 - Add venv to Jupyter kernel 
+    python -m ipykernel install --user --name=mlmodel-venv --display-name "ML Model (venv)"
+### Step 4 - Select kernel as ML (VENV) in kernel
+    jupyter server => VENV
