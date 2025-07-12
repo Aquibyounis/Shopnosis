@@ -15,7 +15,7 @@ app.use(express.json());
 app.use(cors());
 
 // Connect to MongoDB
-mongoose.connect("mongodb://127.0.0.1:27017/Shopnosis", {
+mongoose.connect("mongodb+srv://aquib22bce20068:Shopnosis2004@shopnosis.go9gv0h.mongodb.net/?retryWrites=true&w=majority&appName=Shopnosis", {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
