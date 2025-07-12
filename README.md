@@ -92,3 +92,5 @@ Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-trick
 # FRONTEND Installation modules
 ### For installation of datepicker
     npm install date-picker
+
+    
