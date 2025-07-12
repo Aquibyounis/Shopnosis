@@ -4,214 +4,195 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
 
 const app = express();
 const port = 4000;
 
-// Middleware
 app.use(express.json());
 app.use(cors());
 
-// Connect to MongoDB
-mongoose.connect("mongodb+srv://aquib22bce20068:Shopnosis2004@shopnosis.go9gv0h.mongodb.net/?retryWrites=true&w=majority&appName=Shopnosis", {
+// ✅ MongoDB Atlas connection
+mongoose.connect("mongodb+srv://aquib22bce20068:Shopnosis2004@shopnosis.go9gv0h.mongodb.net/Shopnosis?retryWrites=true&w=majority", {
   useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log("Connected to MongoDB"))
-.catch((err) => console.error("MongoDB connection error:", err));
+  useUnifiedTopology: true
+}).then(() => console.log("✅ Connected to MongoDB Atlas"))
+  .catch(err => console.error("❌ MongoDB connection error:", err));
 
+// ✅ Multer memory storage (files saved as buffer in MongoDB)
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
-// User Schema and Model
+// ✅ User Schema & Model
 const userSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, unique: true, required: true },
-  password: { type: String, required: true },
+  name: String,
+  email: { type: String, unique: true },
+  password: String,
   date: { type: Date, default: Date.now }
 });
-
 const User = mongoose.model("User", userSchema);
 
-// File Schema and Model
+// ✅ File Schema & Model
 const fileSchema = new mongoose.Schema({
-  filename: String,
   originalname: String,
+  mimetype: String,
+  size: Number,
+  buffer: Buffer,
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   uploadDate: { type: Date, default: Date.now }
 });
 const File = mongoose.model("File", fileSchema);
 
-// Multer setup for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, "uploads"));
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + "-" + file.originalname);
-  }
-});
-const upload = multer({ storage });
-
-// Root endpoint
-app.get("/", (req, res) => {
-  res.send("Welcome to Shopnosis API");
-});
-
-// Signup endpoint
-app.post("/signup", async (req, res) => {
-  try {
-    const { name, email, password } = req.body;
-
-    if (!name || !email || !password) {
-      return res.status(400).json({ success: false, error: "Name, email, and password are required" });
-    }
-
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ success: false, error: "User with this email already exists" });
-    }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create user
-    const newUser = new User({ name, email, password: hashedPassword });
-    await newUser.save();
-
-    // Create JWT token
-    const token = jwt.sign({ userId: newUser._id }, "secret_shopnosis", { expiresIn: "15d" });
-
-    // Return name in response
-    res.json({ success: true, token, name: newUser.name });
-  } catch (error) {
-    console.error("Signup error:", error);
-    res.status(500).json({ success: false, error: "Internal server error" });
-  }
-});
-
-// Login endpoint
-app.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ success: false, error: "Email and password are required" });
-    }
-
-    // Find user by email
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ success: false, error: "Invalid email or password" });
-    }
-
-    // Compare password
-    const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) {
-      return res.status(400).json({ success: false, error: "Invalid email or password" });
-    }
-
-    // Create JWT token
-    const token = jwt.sign({ userId: user._id }, "secret_shopnosis", { expiresIn: "15d" });
-
-    // Return name in response
-    res.json({ success: true, token, name: user.name });
-  } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({ success: false, error: "Internal server error" });
-  }
-});
-
-// Basic auth middleware to protect routes
+// ✅ JWT Middleware
 const authenticate = (req, res, next) => {
   const token = req.header("auth-token");
-  if (!token) return res.status(401).json({ error: "Access denied. No token provided." });
+  if (!token) return res.status(401).json({ error: "Access denied" });
 
   try {
     const verified = jwt.verify(token, "secret_shopnosis");
     req.user = verified;
     next();
-  } catch (err) {
-    res.status(401).json({ error: "Invalid token" });
+  } catch {
+    res.status(400).json({ error: "Invalid token" });
   }
 };
 
-// Example protected route (optional)
-app.get("/protected", authenticate, (req, res) => {
-  res.json({ message: "You accessed a protected route!", userId: req.user.userId });
+// ✅ Root Endpoint
+app.get("/", (req, res) => {
+  res.send("Welcome to Shopnosis API");
 });
 
-// Get all users (protected route)
-app.get("/users", authenticate, async (req, res) => {
+// ✅ Signup
+app.post("/signup", async (req, res) => {
   try {
-    const users = await User.find({}, "-password"); // Exclude password field
-    res.json({ success: true, users });
-  } catch (error) {
-    res.status(500).json({ success: false, error: "Internal server error" });
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password)
+      return res.status(400).json({ error: "Name, email, and password are required" });
+
+    const exists = await User.findOne({ email });
+    if (exists) return res.status(400).json({ error: "User already exists" });
+
+    const hashed = await bcrypt.hash(password, 10);
+    const user = new User({ name, email, password: hashed });
+    await user.save();
+
+    const token = jwt.sign({ userId: user._id }, "secret_shopnosis", { expiresIn: "15d" });
+    res.json({ success: true, token, name: user.name });
+  } catch {
+    res.status(500).json({ error: "Signup failed" });
   }
 });
 
-// Upload file endpoint (protected)
+// ✅ Login
+app.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password)
+      return res.status(400).json({ error: "Email and password required" });
+
+    const user = await User.findOne({ email });
+    if (!user || !(await bcrypt.compare(password, user.password)))
+      return res.status(400).json({ error: "Invalid credentials" });
+
+    const token = jwt.sign({ userId: user._id }, "secret_shopnosis", { expiresIn: "15d" });
+    res.json({ success: true, token, name: user.name });
+  } catch {
+    res.status(500).json({ error: "Login failed" });
+  }
+});
+
+// ✅ Upload File (stored in MongoDB)
 app.post("/filesupload", authenticate, upload.single("file"), async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ success: false, error: "No file uploaded" });
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+
     const newFile = new File({
-      filename: req.file.filename,
       originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      buffer: req.file.buffer,
       userId: req.user.userId
     });
+
     await newFile.save();
-    res.json({ success: true, file: newFile });
-  } catch (error) {
-    res.status(500).json({ success: false, error: "Internal server error" });
+    res.json({ success: true, fileId: newFile._id });
+  } catch {
+    res.status(500).json({ error: "File upload failed" });
   }
 });
 
-// Get files for logged-in user (protected)
+// ✅ List user's files
 app.get("/myfiles", authenticate, async (req, res) => {
   try {
-    const files = await File.find({ userId: req.user.userId });
+    const files = await File.find({ userId: req.user.userId }).select("-buffer");
     res.json({ success: true, files });
-  } catch (error) {
-    res.status(500).json({ success: false, error: "Internal server error" });
+  } catch {
+    res.status(500).json({ error: "Failed to get files" });
   }
 });
 
-// Change password (forgot password)
+// ✅ Download file
+app.get("/download/:id", authenticate, async (req, res) => {
+  try {
+    const file = await File.findOne({ _id: req.params.id, userId: req.user.userId });
+    if (!file) return res.status(404).json({ error: "File not found" });
+
+    res.set("Content-Type", file.mimetype);
+    res.set("Content-Disposition", `attachment; filename="${file.originalname}"`);
+    res.send(file.buffer);
+  } catch {
+    res.status(500).json({ error: "Download failed" });
+  }
+});
+
+// ✅ Delete file
+app.delete("/deletefile/:id", authenticate, async (req, res) => {
+  try {
+    const deleted = await File.findOneAndDelete({ _id: req.params.id, userId: req.user.userId });
+    if (!deleted) return res.status(404).json({ error: "File not found" });
+
+    res.json({ success: true, message: "File deleted" });
+  } catch {
+    res.status(500).json({ error: "Failed to delete file" });
+  }
+});
+
+// ✅ Change password
 app.post("/changepassword", async (req, res) => {
   try {
     const { email, newPassword } = req.body;
-    if (!email || !newPassword) {
-      return res.status(400).json({ success: false, error: "Email and new password are required" });
-    }
+    if (!email || !newPassword)
+      return res.status(400).json({ error: "Email and new password required" });
+
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ success: false, error: "User not found" });
-    }
+    if (!user) return res.status(404).json({ error: "User not found" });
+
     user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
-    res.json({ success: true, message: "Password changed successfully" });
-  } catch (error) {
-    res.status(500).json({ success: false, error: "Internal server error" });
+
+    res.json({ success: true, message: "Password updated" });
+  } catch {
+    res.status(500).json({ error: "Failed to change password" });
   }
 });
 
-// Delete file endpoint (protected)
-app.delete("/deletefile/:id", authenticate, async (req, res) => {
+// ✅ Admin route - Get all users (without passwords)
+app.get("/users", authenticate, async (req, res) => {
   try {
-    const file = await File.findOneAndDelete({ _id: req.params.id, userId: req.user.userId });
-    if (!file) return res.status(404).json({ success: false, error: "File not found" });
-    // Delete file from disk
-    const filePath = path.join(__dirname, "uploads", file.filename);
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ success: false, error: "Internal server error" });
+    const users = await User.find({}, "-password");
+    res.json({ success: true, users });
+  } catch {
+    res.status(500).json({ error: "Failed to get users" });
   }
 });
 
-// Start server
+// ✅ Test protected route
+app.get("/protected", authenticate, (req, res) => {
+  res.json({ message: "Access granted", userId: req.user.userId });
+});
+
+// ✅ Start server
 app.listen(port, () => {
-  console.log(`Shopnosis backend running on port ${port}`);
+  console.log(`🚀 Shopnosis backend running on port ${port}`);
 });
