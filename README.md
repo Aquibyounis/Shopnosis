@@ -95,4 +95,4 @@ Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-trick
 
 # BACKEND Installation modules
 ### For initialization of backend 
-    npm install express mongoose bcrypt jsonwebtoken cors multer nodemon
+    npm install express mongoose bcrypt jsonwebtoken cors multer nodemon dotenv

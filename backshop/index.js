@@ -4,23 +4,24 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const multer = require("multer");
+require("dotenv").config(); // Load environment variables from .env
 
 const app = express();
-const port = 4000;
 
 app.use(express.json());
 app.use(cors());
 
-// ✅ MongoDB Atlas connection
-mongoose.connect("mongodb+srv://aquib22bce20068:Shopnosis2004@shopnosis.go9gv0h.mongodb.net/Shopnosis?retryWrites=true&w=majority", {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => console.log("✅ Connected to MongoDB Atlas"))
-  .catch(err => console.error("❌ MongoDB connection error:", err));
-
-// ✅ Multer memory storage (files saved as buffer in MongoDB)
+// ✅ Multer setup for in-memory storage (no local folder)
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
+
+// ✅ MongoDB Atlas connection using MONGODB_URI from .env
+mongoose.connect(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log("✅ Connected to MongoDB Atlas"))
+.catch(err => console.error("❌ MongoDB connection error:", err));
 
 // ✅ User Schema & Model
 const userSchema = new mongoose.Schema({
@@ -193,6 +194,7 @@ app.get("/protected", authenticate, (req, res) => {
 });
 
 // ✅ Start server
-app.listen(port, () => {
-  console.log(`🚀 Shopnosis backend running on port ${port}`);
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => {
+  console.log(`🚀 Shopnosis backend running on port ${PORT}`);
 });
