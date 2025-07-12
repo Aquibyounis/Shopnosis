@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   SidebarProvider,
   Sidebar,
@@ -26,6 +26,9 @@ import { format } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { Trash2 } from "lucide-react";
+
+const API_URL = "http://localhost:4000";
 
 const mockPreviousAnalysis = [
   {
@@ -49,8 +52,6 @@ const mockImportHistory = [
   { file: "products_june.csv", date: "2024-06-01", status: "Success" },
   { file: "sales_may.xlsx", date: "2024-05-28", status: "Failed" },
 ];
-
-const userName = "John"; // Replace with actual user name from context/auth
 
 const periodOptions = [
   { label: "Last 7 days", value: "7d" },
@@ -76,7 +77,7 @@ const categoryOptions = [
 const OpenPage = () => {
   const [selected, setSelected] = useState("dashboard");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [uploadStatuses, setUploadStatuses] = useState<string[]>([]);
+  const [uploadStatus, setUploadStatus] = useState<string>("");
   const [settingsTab, setSettingsTab] = useState("shop");
   const [period, setPeriod] = useState("7d");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -90,36 +91,100 @@ const OpenPage = () => {
   const [startDateOpen, setStartDateOpen] = useState(false);
   const [endDateOpen, setEndDateOpen] = useState(false);
 
-  const years = Array.from({ length: 10 }, (_, i) => (new Date().getFullYear() - 5 + i).toString());
-  const months = [
-    { value: "1", label: "January" },
-    { value: "2", label: "February" },
-    { value: "3", label: "March" },
-    { value: "4", label: "April" },
-    { value: "5", label: "May" },
-    { value: "6", label: "June" },
-    { value: "7", label: "July" },
-    { value: "8", label: "August" },
-    { value: "9", label: "September" },
-    { value: "10", label: "October" },
-    { value: "11", label: "November" },
-    { value: "12", label: "December" },
-  ];
+  // New states for user and files
+  const [userName, setUserName] = useState("");
+  const [userFiles, setUserFiles] = useState<any[]>([]);
+  const [multiDeleteMode, setMultiDeleteMode] = useState(false);
+  const [selectedForDelete, setSelectedForDelete] = useState<string[]>([]);
 
+  // Get user name from localStorage on mount
+  useEffect(() => {
+    const name = localStorage.getItem("user-name");
+    setUserName(name || "");
+  }, []);
+
+  // Fetch user files from backend
+  useEffect(() => {
+    const token = localStorage.getItem("auth-token");
+    if (!token) return;
+    fetch(`${API_URL}/myfiles`, {
+      headers: { "auth-token": token }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) setUserFiles(data.files);
+        else setUserFiles([]);
+      })
+      .catch(() => setUserFiles([]));
+  }, []);
+
+  // Logout handler
+  const handleLogout = () => {
+    localStorage.removeItem("auth-token");
+    localStorage.removeItem("user-name");
+    window.location.href = "/login";
+  };
+
+  // Handle file selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const filesArray = Array.from(e.target.files);
-      setSelectedFiles(filesArray);
-      setUploadStatuses(Array(filesArray.length).fill(null));
+      setSelectedFiles(Array.from(e.target.files));
+      setUploadStatus("");
     }
   };
 
-  const handleUpload = () => {
-    if (selectedFiles.length > 0) {
-      setUploadStatuses(selectedFiles.map(() => "Uploading..."));
-      setTimeout(() => {
-        setUploadStatuses(selectedFiles.map(() => "Upload successful!"));
-      }, 1500);
+  // Handle file upload to backend
+  const handleUpload = async () => {
+    if (selectedFiles.length === 0) return;
+    const token = localStorage.getItem("auth-token");
+    if (!token) {
+      setUploadStatus("You must be logged in to upload.");
+      return;
+    }
+
+    setUploadStatus("Uploading...");
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const formData = new FormData();
+      formData.append("file", selectedFiles[i]);
+      try {
+        const res = await fetch(`${API_URL}/filesupload`, {
+          method: "POST",
+          headers: {
+            "auth-token": token
+          },
+          body: formData
+        });
+        const data = await res.json();
+        if (data.success) {
+          successCount++;
+        } else {
+          failCount++;
+        }
+      } catch {
+        failCount++;
+      }
+    }
+
+    if (successCount > 0) {
+      setUploadStatus(`Uploaded ${successCount} file(s) successfully${failCount ? `, ${failCount} failed` : ""}.`);
+      // Optionally refresh file list if you want to see new uploads in history
+      const token = localStorage.getItem("auth-token");
+      if (token) {
+        fetch(`${API_URL}/myfiles`, {
+          headers: { "auth-token": token }
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) setUserFiles(data.files);
+            else setUserFiles([]);
+          })
+          .catch(() => setUserFiles([]));
+      }
+    } else {
+      setUploadStatus("No files were uploaded. Please try again.");
     }
   };
 
@@ -135,6 +200,67 @@ const OpenPage = () => {
     setPeriod(value);
     if (value !== "custom") {
       setDateRange([null, null]);
+    }
+  };
+
+  // New function to handle file deletion
+  const handleDeleteFile = async (fileId: string) => {
+    if (!window.confirm("Are you sure you want to delete this file? This action cannot be undone.")) {
+      return;
+    }
+    const token = localStorage.getItem("auth-token");
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/deletefile/${fileId}`, {
+        method: "DELETE",
+        headers: { "auth-token": token }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUserFiles(prev => prev.filter(f => f._id !== fileId));
+      } else {
+        alert("Failed to delete file: " + (data.error || "Unknown error"));
+      }
+    } catch {
+      alert("Failed to delete file: Network/server error");
+    }
+  };
+
+  // Multi-delete handler
+  const handleMultiDelete = async () => {
+    if (selectedForDelete.length === 0) return;
+    if (!window.confirm("Are you sure you want to delete the selected files? This action cannot be undone.")) {
+      return;
+    }
+    const token = localStorage.getItem("auth-token");
+    if (!token) return;
+    let deletedCount = 0;
+    for (const fileId of selectedForDelete) {
+      try {
+        const res = await fetch(`${API_URL}/deletefile/${fileId}`, {
+          method: "DELETE",
+          headers: { "auth-token": token }
+        });
+        const data = await res.json();
+        if (data.success) {
+          deletedCount++;
+        }
+      } catch {
+        // ignore error for individual file
+      }
+    }
+    setUserFiles(prev => prev.filter(f => !selectedForDelete.includes(f._id)));
+    setSelectedForDelete([]);
+    setMultiDeleteMode(false);
+    setUploadStatus(`${deletedCount} file(s) deleted.`);
+  };
+
+  // Select all handler
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedForDelete(userFiles.map(f => f._id));
+    } else {
+      setSelectedForDelete([]);
     }
   };
 
@@ -396,7 +522,9 @@ const OpenPage = () => {
                 </div>
               </div>
               <div className="p-8">
-                <h2 className="text-4xl font-extrabold text-blue-900 mb-2 tracking-tight drop-shadow">Welcome, {userName}!</h2>
+                <h2 className="text-4xl font-extrabold text-blue-900 mb-2 tracking-tight drop-shadow">
+                  Welcome, {userName}!
+                </h2>
                 <p className="text-lg text-gray-700 mb-8">Here's your analytics and insights overview.</p>
                 <div className="mb-8">
                   <h3 className="text-2xl font-bold text-purple-800 mb-2">Overview</h3>
@@ -462,8 +590,19 @@ const OpenPage = () => {
               <h2 className="text-2xl font-bold mb-4">Import Data</h2>
               <div className="mb-6">
                 <h3 className="text-lg font-semibold mb-2">Upload Product Data</h3>
-                <p className="text-gray-600 mb-2">Upload a CSV or Excel file. <a href="#" className="text-blue-600 underline">Download required format template</a></p>
-                <input type="file" accept=".csv,.xlsx,.xls" onChange={handleFileChange} className="mb-2" multiple />
+                <p className="text-gray-600 mb-2">
+                  Upload a CSV or Excel file.{" "}
+                  <a href="#" className="text-blue-600 underline">
+                    Download required format template
+                  </a>
+                </p>
+                <input
+                  type="file"
+                  accept=".csv,.xlsx,.xls"
+                  onChange={handleFileChange}
+                  className="mb-2"
+                  multiple
+                />
                 <button
                   className="ml-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
                   onClick={handleUpload}
@@ -472,55 +611,97 @@ const OpenPage = () => {
                 >
                   Upload
                 </button>
-                {selectedFiles.length > 0 && (
-                  <div className="mt-4">
-                    <h4 className="font-semibold mb-2">Selected Files:</h4>
-                    <ul className="list-disc ml-6">
-                      {selectedFiles.map((file, idx) => (
-                        <li key={file.name + idx} className="mb-1">
-                          {file.name}
-                          {uploadStatuses[idx] && (
-                            <span className="ml-2 text-green-600">{uploadStatuses[idx]}</span>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                {uploadStatus && (
+                  <div className="mt-4 text-green-700 font-semibold">{uploadStatus}</div>
                 )}
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Import History</h3>
-                <table className="min-w-full bg-white/80 rounded shadow">
-                  <thead>
-                    <tr>
-                      <th className="py-2 px-4 text-left">File</th>
-                      <th className="py-2 px-4 text-left">Date</th>
-                      <th className="py-2 px-4 text-left">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {mockImportHistory.map((item, idx) => (
-                      <tr key={idx}>
-                        <td className="py-2 px-4">{item.file}</td>
-                        <td className="py-2 px-4">{item.date}</td>
-                        <td className={`py-2 px-4 ${item.status === "Success" ? "text-green-600" : "text-red-600"}`}>{item.status}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
               </div>
             </div>
           )}
           {selected === "history" && (
             <div>
-              <h2 className="text-2xl font-bold mb-4">History</h2>
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-2">Import History</h3>
-                <p className="text-gray-600 mb-2">Files uploaded, who uploaded, when, and status (placeholder).</p>
+              <h2 className="text-2xl font-bold mb-4">Your Uploaded Files</h2>
+              <div className="mb-4 flex items-center gap-4">
+                <Button
+                  variant={multiDeleteMode ? "destructive" : "outline"}
+                  onClick={() => {
+                    setMultiDeleteMode(!multiDeleteMode);
+                    setSelectedForDelete([]);
+                  }}
+                >
+                  {multiDeleteMode ? "Cancel Multi Delete" : "Delete Multiple"}
+                </Button>
+                {multiDeleteMode && (
+                  <Button
+                    variant="destructive"
+                    onClick={handleMultiDelete}
+                    disabled={selectedForDelete.length === 0}
+                  >
+                    Delete Selected
+                  </Button>
+                )}
               </div>
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Sales History</h3>
-                <p className="text-gray-600 mb-2">View historical sales data (filterable) (placeholder).</p>
+              <div className="mb-6">
+                {userFiles.length === 0 ? (
+                  <p className="text-gray-600">No files uploaded yet.</p>
+                ) : (
+                  <table className="min-w-full bg-white/80 rounded shadow">
+                    <thead>
+                      <tr>
+                        {multiDeleteMode && (
+                          <th className="py-2 px-4 text-left">
+                            <input
+                              type="checkbox"
+                              checked={
+                                selectedForDelete.length === userFiles.length && userFiles.length > 0
+                              }
+                              onChange={e => handleSelectAll(e.target.checked)}
+                              aria-label="Select all files"
+                            />
+                          </th>
+                        )}
+                        <th className="py-2 px-4 text-left">File Name</th>
+                        <th className="py-2 px-4 text-left">Original Name</th>
+                        <th className="py-2 px-4 text-left">Upload Date</th>
+                        <th className="py-2 px-4 text-left">Delete</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {userFiles.map((file, idx) => (
+                        <tr key={file._id || idx}>
+                          {multiDeleteMode && (
+                            <td className="py-2 px-4">
+                              <input
+                                type="checkbox"
+                                checked={selectedForDelete.includes(file._id)}
+                                onChange={e => {
+                                  if (e.target.checked) {
+                                    setSelectedForDelete(prev => [...prev, file._id]);
+                                  } else {
+                                    setSelectedForDelete(prev => prev.filter(id => id !== file._id));
+                                  }
+                                }}
+                                aria-label={`Select file ${file.filename}`}
+                              />
+                            </td>
+                          )}
+                          <td className="py-2 px-4">{file.filename}</td>
+                          <td className="py-2 px-4">{file.originalname}</td>
+                          <td className="py-2 px-4">{new Date(file.uploadDate).toLocaleString()}</td>
+                          <td className="py-2 px-4">
+                            <button
+                              onClick={() => handleDeleteFile(file._id)}
+                              className="text-red-600 hover:text-red-800"
+                              title="Delete file"
+                              disabled={multiDeleteMode}
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
             </div>
           )}
@@ -532,6 +713,7 @@ const OpenPage = () => {
                   <TabsTrigger value="shop">Shop Details</TabsTrigger>
                   <TabsTrigger value="notifications">Notification Settings</TabsTrigger>
                   <TabsTrigger value="backup">Backup & Restore</TabsTrigger>
+                  <TabsTrigger value="logout">Logout</TabsTrigger>
                 </TabsList>
                 <TabsContent value="shop">
                   <div className="mt-4">
@@ -549,6 +731,16 @@ const OpenPage = () => {
                   <div className="mt-4">
                     <h3 className="text-lg font-semibold mb-2">Backup & Restore</h3>
                     <p className="text-gray-600 mb-2">Manual backup / restore data (placeholder).</p>
+                  </div>
+                </TabsContent>
+                <TabsContent value="logout">
+                  <div className="mt-4">
+                    <Button
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                      onClick={handleLogout}
+                    >
+                      Logout
+                    </Button>
                   </div>
                 </TabsContent>
               </Tabs>
