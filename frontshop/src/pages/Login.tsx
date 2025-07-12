@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { BarChart3, Eye, EyeOff, ArrowLeft } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
@@ -14,6 +14,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +28,7 @@ const Login = () => {
         description: "Welcome back to ShopperMind.",
       });
       setIsLoading(false);
-      // In a real app, you'd redirect to dashboard here
+      navigate('/open');
     }, 1500);
   };
 
