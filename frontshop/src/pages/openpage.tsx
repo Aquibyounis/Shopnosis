@@ -16,6 +16,16 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { CalendarIcon, ChevronsUpDown } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import type { DateRange } from "react-day-picker";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 const mockPreviousAnalysis = [
   {
@@ -43,17 +53,24 @@ const mockImportHistory = [
 const userName = "John"; // Replace with actual user name from context/auth
 
 const periodOptions = [
-  { label: "Week", value: "week" },
-  { label: "Month", value: "month" },
-  { label: "Year", value: "year" },
+  { label: "Last 7 days", value: "7d" },
+  { label: "Last 1 month", value: "1m" },
+  { label: "Last 3 months", value: "3m" },
+  { label: "Last 6 months", value: "6m" },
+  { label: "Last 1 year", value: "1y" },
+  { label: "Custom range", value: "custom" },
 ];
 const categoryOptions = [
-  "All Categories",
   "Electronics",
   "Fashion",
-  "Home",
-  "Beauty",
-  "Sports",
+  "Home & Garden",
+  "Beauty & Health",
+  "Sports & Outdoors",
+  "Books & Media",
+  "Automotive",
+  "Toys & Games",
+  "Food & Beverages",
+  "Jewelry & Accessories",
 ];
 
 const OpenPage = () => {
@@ -61,8 +78,33 @@ const OpenPage = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadStatuses, setUploadStatuses] = useState<string[]>([]);
   const [settingsTab, setSettingsTab] = useState("shop");
-  const [period, setPeriod] = useState("week");
+  const [period, setPeriod] = useState("7d");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [categoryOpen, setCategoryOpen] = useState(false);
   const [category, setCategory] = useState("All Categories");
+  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
+  const [startDate, endDate] = dateRange;
+  const [dateRangeOpen, setDateRangeOpen] = useState(false);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [selectedMonth, setSelectedMonth] = useState((new Date().getMonth() + 1).toString());
+  const [startDateOpen, setStartDateOpen] = useState(false);
+  const [endDateOpen, setEndDateOpen] = useState(false);
+
+  const years = Array.from({ length: 10 }, (_, i) => (new Date().getFullYear() - 5 + i).toString());
+  const months = [
+    { value: "1", label: "January" },
+    { value: "2", label: "February" },
+    { value: "3", label: "March" },
+    { value: "4", label: "April" },
+    { value: "5", label: "May" },
+    { value: "6", label: "June" },
+    { value: "7", label: "July" },
+    { value: "8", label: "August" },
+    { value: "9", label: "September" },
+    { value: "10", label: "October" },
+    { value: "11", label: "November" },
+    { value: "12", label: "December" },
+  ];
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -78,6 +120,21 @@ const OpenPage = () => {
       setTimeout(() => {
         setUploadStatuses(selectedFiles.map(() => "Upload successful!"));
       }, 1500);
+    }
+  };
+
+  const handleCategoryToggle = (category: string) => {
+    setSelectedCategories(prev => 
+      prev.includes(category) 
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    );
+  };
+
+  const handlePeriodChange = (value: string) => {
+    setPeriod(value);
+    if (value !== "custom") {
+      setDateRange([null, null]);
     }
   };
 
@@ -134,40 +191,208 @@ const OpenPage = () => {
           {/* Sticky Filters */}
           {selected === "dashboard" && (
             <>
-              <div className="sticky top-0 z-30 flex flex-col items-end gap-2 p-6 bg-gradient-to-br from-blue-50 via-purple-50 to-white/80 bg-opacity-80 backdrop-blur-md rounded-b-xl shadow-sm">
-                <div className="flex gap-2">
-                  {periodOptions.map(opt => (
-                    <Button
-                      key={opt.value}
-                      variant={period === opt.value ? "default" : "outline"}
-                      className={cn(
-                        period === opt.value
-                          ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow"
-                          : "border-blue-200 text-blue-700 hover:bg-blue-50",
-                        "font-semibold px-4 py-2 rounded-full transition"
-                      )}
-                      onClick={() => setPeriod(opt.value)}
-                    >
-                      {opt.label}
-                    </Button>
-                  ))}
-                </div>
-                <div className="flex gap-2 mt-2">
-                  {categoryOptions.map(opt => (
-                    <Button
-                      key={opt}
-                      variant={category === opt ? "default" : "outline"}
-                      className={cn(
-                        category === opt
-                          ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow"
-                          : "border-purple-200 text-purple-700 hover:bg-purple-50",
-                        "font-semibold px-4 py-2 rounded-full transition"
-                      )}
-                      onClick={() => setCategory(opt)}
-                    >
-                      {opt}
-                    </Button>
-                  ))}
+              <div className="sticky top-0 z-30 flex flex-col items-end gap-4 p-6 bg-gradient-to-br from-blue-50 via-purple-50 to-white/80 bg-opacity-80 backdrop-blur-md rounded-b-xl shadow-sm">
+                <div className="flex gap-4">
+                  <div className="flex items-center space-x-2">
+                    <label className="text-sm font-medium text-gray-700">Time Period:</label>
+                    <Select value={period} onValueChange={handlePeriodChange}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Select period" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {periodOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    
+                    {period === "custom" && (
+                      <div className="flex items-center space-x-2">
+                        {/* Start Date Popover */}
+                        <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-[150px] justify-start text-left font-normal"
+                              onClick={() => setStartDateOpen(true)}
+                            >
+                              {startDate ? format(startDate, "MMM dd, yyyy") : "Start date"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <DatePicker
+                              selected={startDate}
+                              onChange={(date: Date | null) => {
+                                setDateRange([date, endDate]);
+                                setStartDateOpen(false);
+                              }}
+                              dateFormat="MMM dd, yyyy"
+                              showYearDropdown
+                              scrollableYearDropdown
+                              yearDropdownItemNumber={20}
+                              inline
+                              renderCustomHeader={({
+                                date,
+                                changeYear,
+                                decreaseMonth,
+                                increaseMonth,
+                                prevMonthButtonDisabled,
+                                nextMonthButtonDisabled,
+                              }) => (
+                                <div className="flex items-center justify-between px-2 py-1">
+                                  <button
+                                    onClick={decreaseMonth}
+                                    disabled={prevMonthButtonDisabled}
+                                    className="px-2"
+                                  >
+                                    {"<"}
+                                  </button>
+                                  <span className="font-semibold text-lg">
+                                    {date.toLocaleString("default", { month: "long" })}
+                                  </span>
+                                  <select
+                                    value={date.getFullYear()}
+                                    onChange={({ target: { value } }) => changeYear(Number(value))}
+                                    className="ml-2 border rounded px-1 py-0.5"
+                                  >
+                                    {Array.from({ length: 2050 - 1950 + 1 }, (_, i) => {
+                                      const year = 1950 + i;
+                                      return (
+                                        <option key={year} value={year}>
+                                          {year}
+                                        </option>
+                                      );
+                                    })}
+                                  </select>
+                                  <button
+                                    onClick={increaseMonth}
+                                    disabled={nextMonthButtonDisabled}
+                                    className="px-2"
+                                  >
+                                    {">"}
+                                  </button>
+                                </div>
+                              )}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <span className="mx-1 text-gray-500">-</span>
+                        {/* End Date Popover */}
+                        <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-[150px] justify-start text-left font-normal"
+                              onClick={() => setEndDateOpen(true)}
+                            >
+                              {endDate ? format(endDate, "MMM dd, yyyy") : "End date"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <DatePicker
+                              selected={endDate}
+                              onChange={(date: Date | null) => {
+                                setDateRange([startDate, date]);
+                                setEndDateOpen(false);
+                              }}
+                              dateFormat="MMM dd, yyyy"
+                              showYearDropdown
+                              scrollableYearDropdown
+                              yearDropdownItemNumber={20}
+                              inline
+                              renderCustomHeader={({
+                                date,
+                                changeYear,
+                                decreaseMonth,
+                                increaseMonth,
+                                prevMonthButtonDisabled,
+                                nextMonthButtonDisabled,
+                              }) => (
+                                <div className="flex items-center justify-between px-2 py-1">
+                                  <button
+                                    onClick={decreaseMonth}
+                                    disabled={prevMonthButtonDisabled}
+                                    className="px-2"
+                                  >
+                                    {"<"}
+                                  </button>
+                                  <span className="font-semibold text-lg">
+                                    {date.toLocaleString("default", { month: "long" })}
+                                  </span>
+                                  <select
+                                    value={date.getFullYear()}
+                                    onChange={({ target: { value } }) => changeYear(Number(value))}
+                                    className="ml-2 border rounded px-1 py-0.5"
+                                  >
+                                    {Array.from({ length: 2050 - 1950 + 1 }, (_, i) => {
+                                      const year = 1950 + i;
+                                      return (
+                                        <option key={year} value={year}>
+                                          {year}
+                                        </option>
+                                      );
+                                    })}
+                                  </select>
+                                  <button
+                                    onClick={increaseMonth}
+                                    disabled={nextMonthButtonDisabled}
+                                    className="px-2"
+                                  >
+                                    {">"}
+                                  </button>
+                                </div>
+                              )}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <label className="text-sm font-medium text-gray-700">Categories:</label>
+                    <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={categoryOpen}
+                          className="w-[200px] justify-between"
+                        >
+                          {selectedCategories.length === 0
+                            ? "Select categories..."
+                            : selectedCategories.length === 1
+                            ? selectedCategories[0]
+                            : `${selectedCategories.length} categories selected`}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[200px] p-0">
+                        <Command>
+                          <CommandInput placeholder="Search categories..." />
+                          <CommandList>
+                            <CommandEmpty>No category found.</CommandEmpty>
+                            <CommandGroup>
+                              {categoryOptions.map((category) => (
+                                <CommandItem
+                                  key={category}
+                                  onSelect={() => handleCategoryToggle(category)}
+                                >
+                                  <Checkbox
+                                    checked={selectedCategories.includes(category)}
+                                    className="mr-2"
+                                  />
+                                  {category}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                 </div>
               </div>
               <div className="p-8">
