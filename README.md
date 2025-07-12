@@ -88,3 +88,7 @@ Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-trick
     python -m ipykernel install --user --name=mlmodel-venv --display-name "ML Model (venv)"
 ### Step 4 - Select kernel as ML (VENV) in kernel
     jupyter server => ML Model (venv)
+
+# FRONTEND Installation modules
+### For installation of datepicker
+    npm install date-picker
