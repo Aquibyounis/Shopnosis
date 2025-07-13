@@ -27,6 +27,10 @@ import type { DateRange } from "react-day-picker";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { Trash2 } from "lucide-react";
+import DashSection from "./dash";
+import HistorySection from "./history";
+import ImportSection from "./import";
+import SettingsSection from "./settings";
 
 const API_URL = "http://localhost:4000";
 
@@ -96,6 +100,18 @@ const OpenPage = () => {
   const [userFiles, setUserFiles] = useState<any[]>([]);
   const [multiDeleteMode, setMultiDeleteMode] = useState(false);
   const [selectedForDelete, setSelectedForDelete] = useState<string[]>([]);
+
+  // Sorting state for history table
+  const [sortAsc, setSortAsc] = useState(false);
+  const [sortedFiles, setSortedFiles] = useState<any[]>([]);
+  useEffect(() => {
+    const sorted = [...userFiles].sort((a, b) => {
+      const dateA = new Date(a.uploadDate).getTime();
+      const dateB = new Date(b.uploadDate).getTime();
+      return sortAsc ? dateA - dateB : dateB - dateA;
+    });
+    setSortedFiles(sorted);
+  }, [userFiles, sortAsc]);
 
   // Get user name from localStorage on mount
   useEffect(() => {
@@ -316,435 +332,44 @@ const OpenPage = () => {
         <SidebarInset className="relative p-0 flex-1">
           {/* Sticky Filters */}
           {selected === "dashboard" && (
-            <>
-              <div className="sticky top-0 z-30 flex flex-col items-end gap-4 p-6 bg-gradient-to-br from-blue-50 via-purple-50 to-white/80 bg-opacity-80 backdrop-blur-md rounded-b-xl shadow-sm">
-                <div className="flex gap-4">
-                  <div className="flex items-center space-x-2">
-                    <label className="text-sm font-medium text-gray-700">Time Period:</label>
-                    <Select value={period} onValueChange={handlePeriodChange}>
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Select period" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {periodOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    
-                    {period === "custom" && (
-                      <div className="flex items-center space-x-2">
-                        {/* Start Date Popover */}
-                        <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className="w-[150px] justify-start text-left font-normal"
-                              onClick={() => setStartDateOpen(true)}
-                            >
-                              {startDate ? format(startDate, "MMM dd, yyyy") : "Start date"}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <DatePicker
-                              selected={startDate}
-                              onChange={(date: Date | null) => {
-                                setDateRange([date, endDate]);
-                                setStartDateOpen(false);
-                              }}
-                              dateFormat="MMM dd, yyyy"
-                              showYearDropdown
-                              scrollableYearDropdown
-                              yearDropdownItemNumber={20}
-                              inline
-                              renderCustomHeader={({
-                                date,
-                                changeYear,
-                                decreaseMonth,
-                                increaseMonth,
-                                prevMonthButtonDisabled,
-                                nextMonthButtonDisabled,
-                              }) => (
-                                <div className="flex items-center justify-between px-2 py-1">
-                                  <button
-                                    onClick={decreaseMonth}
-                                    disabled={prevMonthButtonDisabled}
-                                    className="px-2"
-                                  >
-                                    {"<"}
-                                  </button>
-                                  <span className="font-semibold text-lg">
-                                    {date.toLocaleString("default", { month: "long" })}
-                                  </span>
-                                  <select
-                                    value={date.getFullYear()}
-                                    onChange={({ target: { value } }) => changeYear(Number(value))}
-                                    className="ml-2 border rounded px-1 py-0.5"
-                                  >
-                                    {Array.from({ length: 2050 - 1950 + 1 }, (_, i) => {
-                                      const year = 1950 + i;
-                                      return (
-                                        <option key={year} value={year}>
-                                          {year}
-                                        </option>
-                                      );
-                                    })}
-                                  </select>
-                                  <button
-                                    onClick={increaseMonth}
-                                    disabled={nextMonthButtonDisabled}
-                                    className="px-2"
-                                  >
-                                    {">"}
-                                  </button>
-                                </div>
-                              )}
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <span className="mx-1 text-gray-500">-</span>
-                        {/* End Date Popover */}
-                        <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className="w-[150px] justify-start text-left font-normal"
-                              onClick={() => setEndDateOpen(true)}
-                            >
-                              {endDate ? format(endDate, "MMM dd, yyyy") : "End date"}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <DatePicker
-                              selected={endDate}
-                              onChange={(date: Date | null) => {
-                                setDateRange([startDate, date]);
-                                setEndDateOpen(false);
-                              }}
-                              dateFormat="MMM dd, yyyy"
-                              showYearDropdown
-                              scrollableYearDropdown
-                              yearDropdownItemNumber={20}
-                              inline
-                              renderCustomHeader={({
-                                date,
-                                changeYear,
-                                decreaseMonth,
-                                increaseMonth,
-                                prevMonthButtonDisabled,
-                                nextMonthButtonDisabled,
-                              }) => (
-                                <div className="flex items-center justify-between px-2 py-1">
-                                  <button
-                                    onClick={decreaseMonth}
-                                    disabled={prevMonthButtonDisabled}
-                                    className="px-2"
-                                  >
-                                    {"<"}
-                                  </button>
-                                  <span className="font-semibold text-lg">
-                                    {date.toLocaleString("default", { month: "long" })}
-                                  </span>
-                                  <select
-                                    value={date.getFullYear()}
-                                    onChange={({ target: { value } }) => changeYear(Number(value))}
-                                    className="ml-2 border rounded px-1 py-0.5"
-                                  >
-                                    {Array.from({ length: 2050 - 1950 + 1 }, (_, i) => {
-                                      const year = 1950 + i;
-                                      return (
-                                        <option key={year} value={year}>
-                                          {year}
-                                        </option>
-                                      );
-                                    })}
-                                  </select>
-                                  <button
-                                    onClick={increaseMonth}
-                                    disabled={nextMonthButtonDisabled}
-                                    className="px-2"
-                                  >
-                                    {">"}
-                                  </button>
-                                </div>
-                              )}
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <label className="text-sm font-medium text-gray-700">Categories:</label>
-                    <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          aria-expanded={categoryOpen}
-                          className="w-[200px] justify-between"
-                        >
-                          {selectedCategories.length === 0
-                            ? "Select categories..."
-                            : selectedCategories.length === 1
-                            ? selectedCategories[0]
-                            : `${selectedCategories.length} categories selected`}
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[200px] p-0">
-                        <Command>
-                          <CommandInput placeholder="Search categories..." />
-                          <CommandList>
-                            <CommandEmpty>No category found.</CommandEmpty>
-                            <CommandGroup>
-                              {categoryOptions.map((category) => (
-                                <CommandItem
-                                  key={category}
-                                  onSelect={() => handleCategoryToggle(category)}
-                                >
-                                  <Checkbox
-                                    checked={selectedCategories.includes(category)}
-                                    className="mr-2"
-                                  />
-                                  {category}
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                </div>
-              </div>
-              <div className="p-8">
-                <h2 className="text-4xl font-extrabold text-blue-900 mb-2 tracking-tight drop-shadow">
-                  Welcome, {userName}!
-                </h2>
-                <p className="text-lg text-gray-700 mb-8">Here's your analytics and insights overview.</p>
-                <div className="mb-8">
-                  <h3 className="text-2xl font-bold text-purple-800 mb-2">Overview</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-4">
-                    <Card className="border-0 glass shadow-lg">
-                      <CardContent className="p-6">
-                        <div className="text-blue-600 mb-2 font-semibold">Total Sales</div>
-                        <div className="text-3xl font-extrabold text-blue-900">$45,231</div>
-                      </CardContent>
-                    </Card>
-                    <Card className="border-0 glass shadow-lg">
-                      <CardContent className="p-6">
-                        <div className="text-purple-600 mb-2 font-semibold">Top Product</div>
-                        <div className="text-3xl font-extrabold text-purple-900">Product A</div>
-                      </CardContent>
-                    </Card>
-                    <Card className="border-0 glass shadow-lg">
-                      <CardContent className="p-6">
-                        <div className="text-blue-600 mb-2 font-semibold">Revenue</div>
-                        <div className="text-3xl font-extrabold text-blue-900">$120,000</div>
-                      </CardContent>
-                    </Card>
-                    <Card className="border-0 glass shadow-lg">
-                      <CardContent className="p-6">
-                        <div className="text-purple-600 mb-2 font-semibold">Profit</div>
-                        <div className="text-3xl font-extrabold text-purple-900">$30,000</div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  <h3 className="text-xl font-bold text-blue-800 mt-6 mb-2">Sales Analysis</h3>
-                  <p className="text-gray-700 mb-4">Graphs and tables for daily/weekly/monthly trends (placeholder).</p>
-                  <h3 className="text-xl font-bold text-purple-800 mt-6 mb-2">Inventory Status</h3>
-                  <p className="text-gray-700 mb-4">Low stock, out-of-stock products (placeholder).</p>
-                  <h3 className="text-xl font-bold text-blue-800 mt-6 mb-2">Top Products</h3>
-                  <p className="text-gray-700 mb-4">Based on sales or profit (placeholder).</p>
-                  <h3 className="text-xl font-bold text-purple-800 mt-6 mb-2">Custom Filters</h3>
-                  <p className="text-gray-700 mb-4">Date range, category, brand, etc. (placeholder).</p>
-                  <h3 className="text-xl font-bold text-blue-800 mt-6 mb-2">Export Snapshot</h3>
-                  <Badge variant="secondary">Download PDF/CSV (placeholder)</Badge>
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold text-purple-800 mb-2">Previous Analysis</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {mockPreviousAnalysis.map((item, idx) => (
-                      <Card key={idx} className="border-0 glass shadow-md">
-                        <CardHeader>
-                          <CardTitle className="text-blue-900 font-bold">{item.title}</CardTitle>
-                          <CardDescription className="text-purple-700">{item.date}</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-gray-800 mb-2">{item.summary}</p>
-                          <Badge variant="secondary">View Details</Badge>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </>
+            <DashSection
+              userName={userName}
+              period={period}
+              handlePeriodChange={handlePeriodChange}
+              selectedCategories={selectedCategories}
+              categoryOpen={categoryOpen}
+              setCategoryOpen={setCategoryOpen}
+              handleCategoryToggle={handleCategoryToggle}
+            />
           )}
           {selected === "import" && (
-            <div>
-              <h2 className="text-2xl font-bold mb-4">Import Data</h2>
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-2">Upload Product Data</h3>
-                <p className="text-gray-600 mb-2">
-                  Upload a CSV or Excel file.{" "}
-                  <a href="#" className="text-blue-600 underline">
-                    Download required format template
-                  </a>
-                </p>
-                <input
-                  type="file"
-                  accept=".csv,.xlsx,.xls"
-                  onChange={handleFileChange}
-                  className="mb-2"
-                  multiple
-                />
-                <button
-                  className="ml-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                  onClick={handleUpload}
-                  disabled={selectedFiles.length === 0}
-                  type="button"
-                >
-                  Upload
-                </button>
-                {uploadStatus && (
-                  <div className="mt-4 text-green-700 font-semibold">{uploadStatus}</div>
-                )}
-              </div>
-            </div>
+            <ImportSection
+              handleFileChange={handleFileChange}
+              handleUpload={handleUpload}
+              selectedFiles={selectedFiles}
+              uploadStatus={uploadStatus}
+            />
           )}
           {selected === "history" && (
-            <div>
-              <h2 className="text-2xl font-bold mb-4">Your Uploaded Files</h2>
-              <div className="mb-4 flex items-center gap-4">
-                <Button
-                  variant={multiDeleteMode ? "destructive" : "outline"}
-                  onClick={() => {
-                    setMultiDeleteMode(!multiDeleteMode);
-                    setSelectedForDelete([]);
-                  }}
-                >
-                  {multiDeleteMode ? "Cancel Multi Delete" : "Delete Multiple"}
-                </Button>
-                {multiDeleteMode && (
-                  <Button
-                    variant="destructive"
-                    onClick={handleMultiDelete}
-                    disabled={selectedForDelete.length === 0}
-                  >
-                    Delete Selected
-                  </Button>
-                )}
-              </div>
-              <div className="mb-6">
-                {userFiles.length === 0 ? (
-                  <p className="text-gray-600">No files uploaded yet.</p>
-                ) : (
-                  <table className="min-w-full bg-white/80 rounded shadow">
-                    <thead>
-                      <tr>
-                        {multiDeleteMode && (
-                          <th className="py-2 px-4 text-left">
-                            <input
-                              type="checkbox"
-                              checked={
-                                selectedForDelete.length === userFiles.length && userFiles.length > 0
-                              }
-                              onChange={e => handleSelectAll(e.target.checked)}
-                              aria-label="Select all files"
-                            />
-                          </th>
-                        )}
-                        <th className="py-2 px-4 text-left">File Name</th>
-                        <th className="py-2 px-4 text-left">Original Name</th>
-                        <th className="py-2 px-4 text-left">Upload Date</th>
-                        <th className="py-2 px-4 text-left">Delete</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {userFiles.map((file, idx) => (
-                        <tr key={file._id || idx}>
-                          {multiDeleteMode && (
-                            <td className="py-2 px-4">
-                              <input
-                                type="checkbox"
-                                checked={selectedForDelete.includes(file._id)}
-                                onChange={e => {
-                                  if (e.target.checked) {
-                                    setSelectedForDelete(prev => [...prev, file._id]);
-                                  } else {
-                                    setSelectedForDelete(prev => prev.filter(id => id !== file._id));
-                                  }
-                                }}
-                                aria-label={`Select file ${file.filename}`}
-                              />
-                            </td>
-                          )}
-                          <td className="py-2 px-4">{file.filename}</td>
-                          <td className="py-2 px-4">{file.originalname}</td>
-                          <td className="py-2 px-4">{new Date(file.uploadDate).toLocaleString()}</td>
-                          <td className="py-2 px-4">
-                            <button
-                              onClick={() => handleDeleteFile(file._id)}
-                              className="text-red-600 hover:text-red-800"
-                              title="Delete file"
-                              disabled={multiDeleteMode}
-                            >
-                              <Trash2 className="w-5 h-5" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            </div>
+            <HistorySection
+              multiDeleteMode={multiDeleteMode}
+              setMultiDeleteMode={setMultiDeleteMode}
+              selectedForDelete={selectedForDelete}
+              setSelectedForDelete={setSelectedForDelete}
+              handleMultiDelete={handleMultiDelete}
+              handleDeleteFile={handleDeleteFile}
+              handleSelectAll={handleSelectAll}
+              sortAsc={sortAsc}
+              setSortAsc={setSortAsc}
+              sortedFiles={sortedFiles}
+            />
           )}
           {selected === "settings" && (
-            <div>
-              <h2 className="text-2xl font-bold mb-4">Settings</h2>
-              <Tabs value={settingsTab} onValueChange={setSettingsTab} className="mb-6">
-                <TabsList>
-                  <TabsTrigger value="shop">Shop Details</TabsTrigger>
-                  <TabsTrigger value="notifications">Notification Settings</TabsTrigger>
-                  <TabsTrigger value="backup">Backup & Restore</TabsTrigger>
-                  <TabsTrigger value="logout">Logout</TabsTrigger>
-                </TabsList>
-                <TabsContent value="shop">
-                  <div className="mt-4">
-                    <h3 className="text-lg font-semibold mb-2">Shop Details</h3>
-                    <p className="text-gray-600 mb-2">Name, address, logo, contact (placeholder).</p>
-                  </div>
-                </TabsContent>
-                <TabsContent value="notifications">
-                  <div className="mt-4">
-                    <h3 className="text-lg font-semibold mb-2">Notification Settings</h3>
-                    <p className="text-gray-600 mb-2">Low stock alerts, sales drop alerts (placeholder).</p>
-                  </div>
-                </TabsContent>
-                <TabsContent value="backup">
-                  <div className="mt-4">
-                    <h3 className="text-lg font-semibold mb-2">Backup & Restore</h3>
-                    <p className="text-gray-600 mb-2">Manual backup / restore data (placeholder).</p>
-                  </div>
-                </TabsContent>
-                <TabsContent value="logout">
-                  <div className="mt-4">
-                    <Button
-                      className="bg-red-600 hover:bg-red-700 text-white"
-                      onClick={handleLogout}
-                    >
-                      Logout
-                    </Button>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </div>
+            <SettingsSection
+              settingsTab={settingsTab}
+              setSettingsTab={setSettingsTab}
+              handleLogout={handleLogout}
+            />
           )}
         </SidebarInset>
       </div>
